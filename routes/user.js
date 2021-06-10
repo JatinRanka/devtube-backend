@@ -1,7 +1,10 @@
 const express = require("express");
 const router = express.Router();
 const { User } = require("../models");
-const { createDefaultPlaylistsForUser } = require("../helper");
+const {
+  createDefaultPlaylistsForUser,
+  generateAuthToken,
+} = require("../helper");
 
 router.post("/", async (req, res, next) => {
   try {
@@ -11,11 +14,19 @@ router.post("/", async (req, res, next) => {
 
     createDefaultPlaylistsForUser(savedUser);
 
-    res.status(200).json({
-      success: true,
-      message: "User created successfully.",
-      user: savedUser,
-    });
+    const token = generateAuthToken(savedUser);
+
+    res
+      .status(201)
+      .header({
+        Authorization: token,
+        "access-control-expose-headers": "Authorization",
+      })
+      .json({
+        success: true,
+        message: "User created successfully.",
+        user: savedUser,
+      });
   } catch (error) {
     next(error);
   }
@@ -33,7 +44,14 @@ router.post("/login", async (req, res, next) => {
       });
     }
 
-    res.json({ success: true, user });
+    const token = generateAuthToken(user);
+
+    res
+      .header({
+        Authorization: token,
+        "access-control-expose-headers": "Authorization",
+      })
+      .json({ success: true, user });
   } catch (error) {
     next(error);
   }

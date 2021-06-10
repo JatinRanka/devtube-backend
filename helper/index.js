@@ -1,3 +1,6 @@
+const jwt = require("jsonwebtoken");
+require("dotenv").config();
+const SECRET_KEY = process.env.SECRET_KEY;
 const { DEFAULT_PLAYLISTS } = require("../constants");
 const { Playlist } = require("../models");
 
@@ -5,7 +8,7 @@ const canDeletePlaylist = (playlist) =>
   !DEFAULT_PLAYLISTS.includes(playlist.category);
 
 // converts "WATCH_LATER" to "watch later"
-const getPrettifiedName = (name) => name.split("_").join(" ").toLowerCase();
+const getFormattedName = (name) => name.split("_").join(" ").toLowerCase();
 
 const createDefaultPlaylistsForUser = async (user) => {
   try {
@@ -13,7 +16,7 @@ const createDefaultPlaylistsForUser = async (user) => {
       const defaultPlaylist = DEFAULT_PLAYLISTS[index];
 
       const playlist = {
-        name: getPrettifiedName(defaultPlaylist), // "WATCH_LATER" => "watch later"
+        name: getFormattedName(defaultPlaylist), // "WATCH_LATER" => "watch later"
         category: defaultPlaylist,
         user: user._id,
         listOfVideos: [],
@@ -27,4 +30,17 @@ const createDefaultPlaylistsForUser = async (user) => {
   }
 };
 
-module.exports = { canDeletePlaylist, createDefaultPlaylistsForUser };
+const generateAuthToken = (user) => {
+  const payload = {
+    userId: user._id,
+  };
+
+  const token = jwt.sign(payload, SECRET_KEY);
+  return token;
+};
+
+module.exports = {
+  canDeletePlaylist,
+  createDefaultPlaylistsForUser,
+  generateAuthToken,
+};
