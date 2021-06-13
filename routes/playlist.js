@@ -3,9 +3,24 @@ const { canDeletePlaylist } = require("../helper");
 const router = express.Router();
 const { Playlist } = require("../models");
 
+const populate = {
+  path: 'listOfVideos',
+  model: 'Video',
+  select: '_id title youtubeId postedBy',
+  populate: [
+    {
+      path: 'postedBy',
+      model: 'User',
+      select: "_id name",
+    }
+  ]
+}
+
+
 router.get("/", async (req, res, next) => {
   try {
-    const playlists = await Playlist.find({});
+    const { user } = req;
+    const playlists = await Playlist.find({ user: user._id }).populate(populate);
 
     return res.json({
       success: true,
@@ -16,36 +31,27 @@ router.get("/", async (req, res, next) => {
   }
 });
 
-router.post("/", async (req, res) => {
+router.post("/", async (req, res, next) => {
   try {
-    const playlist = req.body;
+    const { user } = req;
+    const playlist = { ...req.body, user };
     const newPlaylist = new Playlist(playlist);
     const savedPlaylist = await newPlaylist.save();
+    const populatedPlaylist = await Playlist.populate(savedPlaylist, populate);
 
     return res.status(201).json({
       success: true,
       message: "Playlist created successfully.",
-      playlist: savedPlaylist,
+      playlist: populatedPlaylist,
     });
   } catch (error) {
     next(error);
   }
 });
 
-const populate = [
-  {
-    path: "listOfVideos",
-    select: "_id title youtubeId",
-  },
-  {
-    path: "listOfVideos.postedBy",
-    select: "_id name",
-  },
-];
-
 router.param("playlistId", async (req, res, next, id) => {
   try {
-    const playlist = Playlist.findOne({ _id: id }).populate(...populate);
+    const playlist = await Playlist.findOne({ _id: id }).populate(populate);
 
     if (!playlist) throw new Error("Playlist not found");
 
@@ -94,7 +100,8 @@ router.post("/:playlistId", async (req, res, next) => {
       { _id: playlist._id },
       update,
       { new: true }
-    ).populate(...populate);
+    )
+      .populate(populate);
 
     return res.status(201).json({
       success: true,
@@ -111,7 +118,7 @@ router.delete("/:playlistId", async (req, res, next) => {
     const { playlist } = req;
 
     if (!canDeletePlaylist(playlist))
-      throw new Error("Cannot delete playlist.");
+      throw new Error("Cannot delete default playlist.");
 
     const deletedPlaylist = await Playlist.findByIdAndDelete(playlist._id);
 
