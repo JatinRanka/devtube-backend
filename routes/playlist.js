@@ -11,11 +11,10 @@ const populate = {
     {
       path: 'postedBy',
       model: 'User',
-      select: "_id name",
+      select: "_id name image",
     }
   ]
-}
-
+};
 
 router.get("/", async (req, res, next) => {
   try {

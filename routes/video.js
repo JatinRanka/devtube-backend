@@ -4,9 +4,9 @@ const router = express.Router();
 
 router.get("/", async (req, res, next) => {
   try {
-    const videosList = await Video.find({}).select("-description").populate({
+    const videosList = await Video.find({}).sort('title').select("-description").populate({
       path: "postedBy",
-      select: "name email",
+      select: "name email image",
     });
 
     return res.json({
@@ -38,7 +38,7 @@ router.param("videoId", async (req, res, next, id) => {
   try {
     const video = await Video.findById(id).populate({
       path: "postedBy",
-      select: "name email",
+      select: "name email image",
     });
 
     if (!video) throw new Error("Video not found");
